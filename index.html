@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skincare Catalog</title>
+    <style>
+        /* Basic styles for table and modal */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            position: relative;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        .button {
+            margin: 10px 0;
+            padding: 10px;
+            cursor: pointer;
+        }
+        /* Styles for modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        /* Styles for filter menu */
+        .filter-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            z-index: 100;
+        }
+        .filter-menu input,
+        .filter-menu select {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        .filter-menu button {
+            width: 100%;
+            padding: 5px;
+        }
+        .filter-icon {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="button add-row-btn">Add Row</button>
+    <button class="button add-column-btn">Add Column</button>
+    <button class="button reset-filters-btn">Reset All Filters</button>
+
+    <table id="product-table">
+        <thead>
+            <tr>
+                <th>
+                    Product Link
+                    <span class="filter-icon">🔽</span>
+                    <div class="filter-menu">
+                        <input type="text" class="filter-input" placeholder="Filter by text">
+                        <button class="apply-filter-btn">Apply</button>
+                    </div>
+                </th>
+                <th>
+                    Name
+                    <span class="filter-icon">🔽</span>
+                    <div class="filter-menu">
+                        <input type="text" class="filter-input" placeholder="Filter by text">
+                        <button class="apply-filter-btn">Apply</button>
+                    </div>
+                </th>
+                <th>
+                    Ingredients
+                    <span class="filter-icon">🔽</span>
+                    <div class="filter-menu">
+                        <input type="text" class="filter-input" placeholder="Filter by text">
+                        <button class="apply-filter-btn">Apply</button>
+                    </div>
+                </th>
+                <th>
+                    Price
+                    <span class="filter-icon">🔽</span>
+                    <div class="filter-menu">
+                        <select class="filter-select">
+                            <option value="greater">Greater Than</option>
+                            <option value="less">Less Than</option>
+                        </select>
+                        <input type="number" class="filter-input" placeholder="Value">
+                        <button class="apply-filter-btn">Apply</button>
+                    </div>
+                </th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be added here -->
+        </tbody>
+    </table>
+
+    <!-- Modal for adding new columns -->
+    <div id="column-modal" class="modal">
+        <div class="modal-content">
+            <span id="close-modal-btn" class="close">&times;</span>
+            <h2>Add New Column</h2>
+            <label for="column-name">Column Name:</label>
+            <input type="text" id="column-name">
+            <br>
+            <label for="column-type">Column Type:</label>
+            <select id="column-type">
+                <option value="text">Text</option>
+                <option value="number">Number</option>
+                <option value="date">Date</option>
+            </select>
+            <br>
+            <button id="create-column-btn" class="button">Add Column</button>
+        </div>
+    </div>
+
+    <!-- Include your JavaScript -->
+    <script>
+        let dynamicColumns = []; // To keep track of dynamically added columns
+    
+        // Function to add the delete button and functionality to a row
+        function addDeleteButton(row) {
+            let deleteCell = row.insertCell(-1); // Add a new cell for the delete button
+            deleteCell.innerHTML = "<button class='delete-btn'>🗑️</button>";
+    
+            // Add event listener for the delete button
+            deleteCell.querySelector('.delete-btn').addEventListener('click', () => {
+                let confirmDelete = confirm("Are you sure you want to delete this row?");
+                if (confirmDelete) {
+                    row.remove(); // Remove the row from the table
+                    console.log('Row deleted');
+                }
+            });
+        }
+    
+        // Function to add a new row to the table
+        document.querySelector('.add-row-btn').addEventListener('click', () => {
+            let tableBody = document.querySelector('#product-table tbody');
+            let newRow = document.createElement('tr'); // Create a new row
+    
+            // Create the input fields in the new row for the existing columns (initial + dynamic)
+            newRow.innerHTML = `
+                <td><input type='text' placeholder='Product Link'></td>
+                <td><input type='text' placeholder='Name'></td>
+                <td><input type='text' placeholder='Ingredients'></td>
+                <td><input type='number' placeholder='Price'></td>
+            `;
+    
+            // Add cells for each dynamic column
+            dynamicColumns.forEach(column => {
+                let newCell = document.createElement('td');
+                if (column.type === 'text') {
+                    newCell.innerHTML = `<input type='text' placeholder='${column.name}'>`;
+                } else if (column.type === 'number') {
+                    newCell.innerHTML = `<input type='number' placeholder='${column.name}'>`;
+                } else if (column.type === 'date') {
+                    newCell.innerHTML = `<input type='date'>`;
+                }
+                newRow.appendChild(newCell);
+            });
+    
+            tableBody.appendChild(newRow); // Append the new row to the table body
+    
+            addDeleteButton(newRow); // Add the delete button to the new row
+    
+            // Log the action
+            console.log('New row added');
+        });
+    
+        // Function to open the modal for adding new column
+        function openColumnModal() {
+            document.getElementById('column-modal').style.display = 'block';
+        }
+    
+        // Function to close the modal
+        function closeColumnModal() {
+            document.getElementById('column-modal').style.display = 'none';
+        }
+    
+        // Function to add a new column to the table
+        function addNewColumn() {
+            const columnName = document.getElementById('column-name').value;
+            const columnType = document.getElementById('column-type').value;
+    
+            if (!columnName) {
+                alert("Please enter a valid column name.");
+                return;
+            }
+    
+            // Add a new column to the table header, before the delete column
+            const tableHead = document.querySelector('#product-table thead tr');
+            const deleteHeader = tableHead.querySelector('th:last-child'); // Get the delete column header
+            const newHeader = document.createElement('th');
+            newHeader.textContent = columnName;
+    
+            // Create a new filter menu for the column
+            newHeader.innerHTML += `
+                <span class="filter-icon">🔽</span>
+                <div class="filter-menu">
+                    <input type="text" class="filter-input" placeholder="Filter by text">
+                    <button class="apply-filter-btn">Apply</button>
+                </div>
+            `;
+    
+            // Insert the new header before the delete column header
+            tableHead.insertBefore(newHeader, deleteHeader);
+    
+            // Add a new column to all existing rows in the table body, before the delete column
+            const tableRows = document.querySelectorAll('#product-table tbody tr');
+            tableRows.forEach(row => {
+                // Insert the new cell just before the last cell (delete button)
+                const deleteCell = row.querySelector('td:last-child'); // Get the delete button cell
+                const newCell = document.createElement('td');
+    
+                if (columnType === 'text') {
+                    newCell.innerHTML = `<input type='text' placeholder='${columnName}'>`;
+                } else if (columnType === 'number') {
+                    newCell.innerHTML = `<input type='number' placeholder='${columnName}'>`;
+                } else if (columnType === 'date') {
+                    newCell.innerHTML = `<input type='date'>`;
+                }
+    
+                // Insert the new cell before the delete cell
+                row.insertBefore(newCell, deleteCell);
+            });
+    
+            // Track the newly added column
+            dynamicColumns.push({ name: columnName, type: columnType });
+    
+            // Close the modal and clear input values
+            closeColumnModal();
+            document.getElementById('column-name').value = '';
+            document.getElementById('column-type').value = 'text';
+    
+            console.log(`New column "${columnName}" of type "${columnType}" added.`);
+    
+            // Reinitialize filter functionality to include new column filters
+            addFilterFunctionality();
+        }
+    
+        // Add filter functionality
+        function addFilterFunctionality() {
+            const tableHead = document.querySelectorAll('#product-table thead th');
+    
+            tableHead.forEach((header, index) => {
+                // Ensure that each header has a filter button
+                const existingFilterBtn = header.querySelector('.filter-btn');
+                if (!existingFilterBtn && header.textContent !== "Delete") {
+                    header.innerHTML += ` <button class='filter-btn'>🔍</button>`;
+                }
+    
+                // Add event listener to the filter button
+                header.querySelector('.filter-btn').addEventListener('click', () => {
+                    const filterMenu = header.querySelector('.filter-menu');
+                    if (filterMenu) {
+                        filterMenu.style.display = 'block';
+                    }
+                });
+            });
+    
+            // Add event listeners to apply filter buttons
+            document.querySelectorAll('.apply-filter-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const header = button.closest('th');
+                    const columnIndex = Array.from(header.parentNode.children).indexOf(header);
+                    const filterMenu = header.querySelector('.filter-menu');
+                    const filterInput = filterMenu.querySelector('.filter-input');
+                    const filterValue = filterInput.value;
+                    const filterSelect = filterMenu.querySelector('.filter-select');
+                    const filterType = filterSelect ? filterSelect.value : 'text';
+    
+                    // Apply filter and close the filter menu
+                    filterTable(columnIndex, filterValue, filterType);
+    
+                    // Debug: Check if the menu is being correctly identified
+                    console.log(`Closing filter menu for column ${columnIndex}`);
+                    filterMenu.style.display = 'none'; // Close the filter menu after applying filter
+                });
+            });
+    
+            // Add event listeners to reset filters
+            document.querySelector('.reset-filters-btn').addEventListener('click', resetFilters);
+        }
+    
+        // Filter table based on column index and filter value
+        function filterTable(columnIndex, filterValue, filterType) {
+            const rows = document.querySelectorAll('#product-table tbody tr');
+    
+            rows.forEach(row => {
+                const cell = row.cells[columnIndex];
+                if (cell) {
+                    const input = cell.querySelector('input');
+                    const cellValue = input ? input.value : cell.textContent;
+                    let isMatch = false;
+    
+                    if (filterType === 'number') {
+                        const numericValue = parseFloat(cellValue);
+                        const numericFilterValue = parseFloat(filterValue);
+    
+                        if (isNaN(numericValue) || isNaN(numericFilterValue)) {
+                            isMatch = false;
+                        } else {
+                            isMatch = filterType === 'greater'
+                                ? numericValue > numericFilterValue
+                                : numericValue < numericFilterValue;
+                        }
+                    } else { // Text filter
+                        isMatch = cellValue.toLowerCase().includes(filterValue.toLowerCase());
+                    }
+    
+                    row.style.display = isMatch ? '' : 'none';
+                }
+            });
+        }
+    
+        // Reset all filters
+        function resetFilters() {
+            const rows = document.querySelectorAll('#product-table tbody tr');
+            rows.forEach(row => {
+                row.style.display = ''; // Show all rows
+            });
+    
+            // Clear filter inputs
+            document.querySelectorAll('.filter-input').forEach(input => {
+                input.value = '';
+            });
+    
+            // Hide all filter menus
+            document.querySelectorAll('.filter-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    
+        // Event listeners for adding columns
+        document.querySelector('.add-column-btn').addEventListener('click', openColumnModal);
+        document.getElementById('create-column-btn').addEventListener('click', addNewColumn);
+        document.getElementById('close-modal-btn').addEventListener('click', closeColumnModal);
+    
+        // Initialize filter functionality on load
+        addFilterFunctionality();
+    
+        // Event listener to reset filters
+        document.querySelector('.reset-filters-btn').addEventListener('click', resetFilters);
+    </script>
+    
+        
+    
+
+</body>
+</html>
